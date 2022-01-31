@@ -10,7 +10,7 @@ import robotparts.sensors.Led;
 import robotparts.sensors.Odometry;
 import robotparts.hardware.Outtake;
 import robotparts.sensors.Touch;
-import robotparts.unused.MecanumDrive;
+import robotparts.hardware.MecanumDrive;
 
 public class TerraBot extends RobotFramework {
 
@@ -20,9 +20,9 @@ public class TerraBot extends RobotFramework {
      *  should go in robot framework.
      */
 
-    public TankDrive tankDrive = new TankDrive();
+
     public Intake intake = new Intake();
-    public Turret turret = new Turret();
+    public MecanumDrive mecDrive = new MecanumDrive();
     public Lift lift = new Lift();
     public Outtake outtake = new Outtake();
     public Carousel carousel = new Carousel();
