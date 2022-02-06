@@ -1,21 +1,33 @@
 package global;
+
+import static global.General.autoModules;
+import static global.General.bot;
+import static global.General.fault;
+import static global.General.fieldSide;
+import static global.General.gameTime;
+import static global.General.gamepad1;
+import static global.General.gamepad2;
+import static global.General.gph1;
+import static global.General.gph2;
+import static global.General.hardwareMap;
+import static global.General.log;
+import static global.General.mainUser;
+import static global.General.storage;
+import static global.General.sync;
+import static global.General.telemetry;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import automodules.AutoModules;
-import automodules.Modules;
-import automodules.Stages;
+import debugging.Fault;
+import debugging.Logger;
 import debugging.Synchroniser;
 import elements.FieldSide;
 import robot.TerraBot;
 import teleutil.GamepadHandler;
-import debugging.Fault;
-import debugging.Logger;
 import util.User;
 import util.store.Storage;
-
-import static global.General.*;
-import static global.General.fieldSide;
 
 public interface Common{
     /**
@@ -25,13 +37,11 @@ public interface Common{
     default void reference(OpMode thisOpMode){
         /**
          * Initialize all of the objects from the opmode
-         * NOTE: the user is automatically set from the type of opMode
          */
         hardwareMap = thisOpMode.hardwareMap;
         telemetry = thisOpMode.telemetry;
         gamepad1 = thisOpMode.gamepad1;
         gamepad2 = thisOpMode.gamepad2;
-        mainUser = User.getUserFromTypeOfOpMode(thisOpMode);
         /**
          * Create the gamepadhanlders from the gamepads
          */
@@ -43,17 +53,26 @@ public interface Common{
         fault = new Fault();
         sync = new Synchroniser();
         log = new Logger();
-        storage = new Storage();
         /**
          * Create the gameTime
          */
         gameTime = new ElapsedTime();
         /**
+         * Get the main user
+         * NOTE: the user is automatically set from the type of opMode
+         */
+        mainUser = User.getUserFromTypeOfOpMode(thisOpMode);
+        /**
+         * Create the storage
+         */
+        storage = new Storage();
+        /**
          * Create the robot, and then the modules, stages, and automodules
          */
         bot = new TerraBot();
-        modules = new Modules();
-        stages = new Stages();
+        /**
+         * Create the automodules
+         */
         autoModules = new AutoModules();
         /**
          * Initialize the robot
@@ -68,8 +87,7 @@ public interface Common{
      */
     default void activate(FieldSide side){
         fieldSide = side;
-        log.watch("Ready");
-        log.showTelemetry();
+        sync.logReady();
     }
 
     /**
@@ -87,7 +105,7 @@ public interface Common{
      * @param showTelemetry
      */
     default void update(boolean showTelemetry){
-        bot.checkAccess(mainUser);
+        bot.update();
         gph1.run();
         gph2.run();
         sync.update();
@@ -95,7 +113,7 @@ public interface Common{
     }
 
     /**
-     * Stops the robot, halts all of the motors (in stop), shows the logs, and saves the storage times
+     * Stops the robot, halts all of the motors (in stop), checks if common is used properly, shows the logs, and saves the storage times
      */
     default void end(){
         bot.stop();

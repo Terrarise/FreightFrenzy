@@ -1,17 +1,18 @@
 package robot;
 
+import static global.General.bot;
+import static robot.RobotFramework.robotFunctionsThread;
+
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 
 import automodules.StageList;
-import util.User;
-import util.codeseg.CodeSeg;
-import util.condition.Status;
-import util.Timer;
 import automodules.stage.Stage;
-
-import static global.General.*;
-import static robot.RobotFramework.robotFunctionsThread;
+import util.Timer;
+import util.User;
+import util.codeseg.ExceptionCodeSeg;
+import util.condition.Status;
 
 public class RobotFunctions {
 
@@ -27,7 +28,7 @@ public class RobotFunctions {
     /**
      * Define the updateCode codeseg to contain the code that will run in the Thread
      */
-    public CodeSeg updateCode = () -> {
+    public ExceptionCodeSeg<RuntimeException> updateCode = () -> {
         /**
          * Check if the robot has access to move for robotfunctions user or ROFU
          */
@@ -40,40 +41,34 @@ public class RobotFunctions {
              * Get the oldest stage
              */
             Stage s = rfsQueue.peek();
-            assert s != null;
             /**
              * If the stage has not started start it,
              * Then run the loop code
              */
-            if(!s.hasStarted()){
+            if(!Objects.requireNonNull(s).hasStarted()){
                 s.start();
             }
             s.loop();
             /**
-             * If the stage should stop then run on stop code and remove the oldest stage and reset the timer
+             * If the stage should stop, then run on stop code, remove the stage, and reset the timer
+             * Otherwise, set the thread to Status.IDLE to prevent unnecessary lag
              */
-            if (s.shouldStop()) {
+            if (s.shouldStop() && !s.isPause()) {
                 s.runOnStop();
                 rfsQueue.poll();
                 timer.reset();
             } else if (s.isPause()) {
-                // TODO FIX
-                // Uh not sure whats going on here...?
-                //robotFunctionsThread.setStatus(Status.IDLE);
+                robotFunctionsThread.setStatus(Status.IDLE);
             }
         } else {
-            //robotFunctionsThread.setStatus(Status.IDLE);
+            robotFunctionsThread.setStatus(Status.IDLE);
         }
-        /**
-         * Update the telemetry
-         */
-        telemetry.update();
     };
 
     /**
      * Resume the robotfunctions,
      * if the queue is not empty and the oldest stage is a pause then delete it and start the thread again
-     * (by seting the status to active)
+     * (by setting the status to active)
      */
     public void resume() {
         if (!rfsQueue.isEmpty() && rfsQueue.peek().isPause()) {
@@ -88,12 +83,12 @@ public class RobotFunctions {
      * Make the first stage a pause so the thread doesn't start updating until resume is called
      */
     public void init(){
-        addPause();
-        robotFunctionsThread.setCode(updateCode);
+        addToQueue(new Stage(true));
+        robotFunctionsThread.setExecutionCode(updateCode);
     }
 
     /**
-     * Add the automodule by reseting the time and starting the thread
+     * Add the automodule by resetting the time and starting the thread
      * Add all of the stages in the automodule to the queue
      * @param autoModule
      */
@@ -119,17 +114,31 @@ public class RobotFunctions {
     }
 
     /**
-     * Empty the queue and reset the timer
+     * Pause the robotfunction queue in the current state after the stage has ended
      */
-    public final void emptyQueue(){
-        rfsQueue.clear();
-        timer.reset();
+    public final void pauseNow() {
+        Queue<Stage> newStages = new LinkedList<>();
+        if (!rfsQueue.isEmpty()) {
+            newStages.add(rfsQueue.poll());
+        }
+        newStages.add(new Stage(true));
+        while (!rfsQueue.isEmpty()) {
+            newStages.add(rfsQueue.poll());
+        }
+        rfsQueue = newStages;
     }
 
     /**
-     * Add a pause to the queue
+     * Empty the queue and reset the timer
      */
-    public void addPause() {
-        addToQueue(new Stage(true));
+    public final void emptyQueue(){
+        if (!rfsQueue.isEmpty()) {
+            Stage s = rfsQueue.peek();
+            rfsQueue.clear();
+            s.runOnStop();
+        } else {
+            rfsQueue.clear();
+        }
+        timer.reset();
     }
 }

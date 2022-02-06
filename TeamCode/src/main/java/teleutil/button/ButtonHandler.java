@@ -1,10 +1,16 @@
 package teleutil.button;
 
+import static global.General.fault;
+
 import java.util.ArrayList;
 
 import teleutil.GamepadHandler;
 import util.ExceptionCatcher;
-import util.codeseg.DoubleParameterCodeSeg;
+import util.codeseg.CodeSeg;
+
+/**
+ * NOTE: Uncommented
+ */
 
 public class ButtonHandler {
     private final Button button;
@@ -15,10 +21,11 @@ public class ButtonHandler {
         button = b; this.gph = gph;
     }
 
-    public <T> void addEvent(Class<T> type, DoubleParameterCodeSeg codeSegs) {
+    public <T> void addEvent(Class<T> type, CodeSeg codeSegs) {
+        fault.check("YOU USED BUTTONHANDLER IN LOOP", eventHandlers.size() < 50, true);
         ExceptionCatcher.catchNewInstance(() -> {
             T obj = type
-                .getDeclaredConstructor(Button.class, DoubleParameterCodeSeg.class, GamepadHandler.class)
+                .getDeclaredConstructor(Button.class, CodeSeg.class, GamepadHandler.class)
                 .newInstance(button, codeSegs, gph);
             eventHandlers.add((ButtonEventHandler) obj);
         });
@@ -27,7 +34,7 @@ public class ButtonHandler {
 
     public void run() {
         for (ButtonEventHandler handler : eventHandlers) {
-            handler.run();
+            handler.runAndUpdate();
         }
     }
 }

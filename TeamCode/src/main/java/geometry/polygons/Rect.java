@@ -1,8 +1,12 @@
 package geometry.polygons;
 
 import geometry.GeometryObject;
-import geometry.Point;
-import geometry.Pose;
+import geometry.position.Point;
+import geometry.position.Pose;
+
+/**
+ * NOTE: Uncommented
+ */
 
 //Rect class defines a rectagle object
 public class Rect extends Quadrilateral {

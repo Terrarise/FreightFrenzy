@@ -2,7 +2,9 @@ package robotparts;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -10,152 +12,249 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
-import java.util.ArrayList;
+import java.util.Map.*;
 import java.util.TreeMap;
 
+import automodules.stage.Exit;
+import automodules.stage.Initial;
+import automodules.stage.Stage;
+import automodules.stage.Stop;
 import robot.RobotFramework;
-import robotparts.electronics.CMotor;
-import robotparts.electronics.CServo;
-import robotparts.electronics.Encoder;
-import robotparts.electronics.LED;
-import robotparts.electronics.PMotor;
-import robotparts.electronics.PServo;
+import robotparts.electronics.continuous.CMotor;
+import robotparts.electronics.continuous.CServo;
+import robotparts.electronics.input.IColor;
+import robotparts.electronics.input.IDistance;
+import robotparts.electronics.input.IEncoder;
+import robotparts.electronics.input.IGyro;
+import robotparts.electronics.output.OLed;
+import robotparts.electronics.positional.PMotor;
+import robotparts.electronics.positional.PServo;
 
 import static global.General.*;
-import robotparts.electronics.Encoder.Type;
+import robotparts.electronics.input.IEncoder.Type;
+import robotparts.electronics.input.ITouch;
 import util.User;
-import util.codeseg.TypeParameterCodeSeg;
+import util.codeseg.ParameterCodeSeg;
 
-public class RobotPart extends Electronic {
+public class RobotPart {
+    /**
+     * Represents a part of the robot like the drivetrain or the intake
+     * When making a new part of the robot part make sure to extend this class
+     * then override the init method
+     */
 
-    public TreeMap<String, CMotor> cmotors = new TreeMap<>();
-    public TreeMap<String, CServo> cservos = new TreeMap<>();
 
-    public TreeMap<String, PMotor> pmotors = new TreeMap<>();
-    public TreeMap<String, PServo> pservos = new TreeMap<>();
-
-    public TreeMap<String, BNO055IMU> gyrosensors = new TreeMap<>();
-    public TreeMap<String, DistanceSensor> distancesensors = new TreeMap<>();
-    public TreeMap<String, ColorSensor> colorsensors = new TreeMap<>();
-    public TreeMap<String, TouchSensor> touchsensors = new TreeMap<>();
-    public TreeMap<String, Encoder> encoders = new TreeMap<>();
-    public TreeMap<String, LED> leds = new TreeMap<>();
-
-    public ArrayList<Electronic> electronics = new ArrayList<>();
-
+    /**
+     * TreeMap to store the list of electronics
+     */
+    public TreeMap<String, Electronic> electronics = new TreeMap<>();
+    /**
+     * The currentUser of the robotPart, by default none
+     */
     private volatile User currentUser = User.NONE;
 
-    public RobotPart(){
-       RobotFramework.allRobotParts.add(this);
+    /**
+     * Constructor to create the robot part
+     * NOTE: This automatically adds itself to the robotparts list
+     */
+//    public RobotPart(){
+//       RobotFramework.allRobotParts.add(this);
+//    }
+
+    public void instantiate(){
+        RobotFramework.allRobotParts.add(this);
     }
 
+    /**
+     * Init method (to be overwritten)
+     */
     public void init() {}
 
+    /**
+     * Create different robot parts from a set of parameters
+     */
     protected CMotor createCMotor(String name, DcMotor.Direction dir){
         CMotor cmotor = new CMotor(hardwareMap.get(DcMotor.class, name), dir, DcMotor.ZeroPowerBehavior.BRAKE, DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        cmotors.put(name, cmotor);
-        electronics.add(cmotor);
+        addElectronic(name, cmotor);
         return cmotor;
     }
 
     protected CMotor createCMotor(String name, DcMotor.Direction dir, DcMotor.ZeroPowerBehavior zpb, DcMotor.RunMode mode){
         CMotor cmotor = new CMotor(hardwareMap.get(DcMotor.class, name), dir, zpb, mode);
-        cmotors.put(name, cmotor);
-        electronics.add(cmotor);
+        addElectronic(name, cmotor);
         return cmotor;
     }
 
     protected CServo createCServo(String name, CRServo.Direction dir){
         CServo cservo = new CServo(hardwareMap.get(CRServo.class, name), dir);
-        cservos.put(name, cservo);
-        electronics.add(cservo);
+        addElectronic(name, cservo);
         return cservo;
     }
 
     protected PServo createPServo(String name, Servo.Direction dir, double startpos, double endpos){
         PServo pservo = new PServo(hardwareMap.get(Servo.class, name), dir, startpos, endpos);
-        pservos.put(name, pservo);
-        electronics.add(pservo);
+        addElectronic(name, pservo);
         return pservo;
     }
-    // TODO FIX
-    // Make this proper
-    // ALSO REMEMBER TO ADD THE OTHER ELECTRONICS TO electronics arraylist
 
     protected PMotor createPMotor(String name, DcMotor.Direction dir){
         PMotor pmotor = new PMotor(hardwareMap.get(DcMotor.class, name), dir, DcMotor.ZeroPowerBehavior.BRAKE, DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        pmotors.put(name, pmotor);
-        electronics.add(pmotor);
+        addElectronic(name, pmotor);
         return pmotor;
     }
 
-    protected BNO055IMU createGyro(String name){
-        BNO055IMU gyro = hardwareMap.get(BNO055IMU.class, name);
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
-        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json";
-        gyro.initialize(parameters);
-        gyrosensors.put(name, gyro);
+    protected IGyro createGyro(String name){
+        IGyro gyro = new IGyro(hardwareMap.get(BNO055IMU.class, name));
+        addElectronic(name, gyro);
         return gyro;
     }
 
-    protected DistanceSensor createDistanceSensor(String name){
-        DistanceSensor distanceSensor = hardwareMap.get(ModernRoboticsI2cRangeSensor.class, name);
-        distancesensors.put(name, distanceSensor);
+    protected IDistance createDistanceSensor(String name){
+        IDistance distanceSensor = new IDistance(hardwareMap.get(DistanceSensor.class, name));
+        addElectronic(name, distanceSensor);
         return distanceSensor;
     }
 
-    protected ColorSensor createColorSensor(String name){
-        ColorSensor colorSensor = hardwareMap.get(ColorSensor.class, name);
-        colorsensors.put(name, colorSensor);
+    protected IColor createColorSensor(String name){
+        IColor colorSensor = new IColor(hardwareMap.get(ColorRangeSensor.class, name));
+        addElectronic(name, colorSensor);
         return colorSensor;
     }
 
-    protected TouchSensor createTouchSensor(String name){
-        TouchSensor touchSensor = hardwareMap.get(TouchSensor.class, name);
-        touchsensors.put(name, touchSensor);
+    protected ITouch createTouchSensor(String name){
+        ITouch touchSensor = new ITouch(hardwareMap.get(TouchSensor.class, name));
+        addElectronic(name, touchSensor);
         return touchSensor;
     }
 
-    protected Encoder createEncoder(String motor, String name, Type type){
-        Encoder encoder = new Encoder(hardwareMap.get(DcMotor.class, motor), type);
-        encoders.put(name, encoder);
+    protected IEncoder createEncoder(String motor, String name, Type type){
+        IEncoder encoder = new IEncoder(hardwareMap.get(DcMotor.class, motor), type);
+        addElectronic(name, encoder);
         return encoder;
     }
 
-    protected LED createLED(String name){
-        LED led = new LED(hardwareMap.get(DigitalChannel.class,  "g" + name), hardwareMap.get(DigitalChannel.class,  "r" + name));
-        leds.put(name, led);
+    protected OLed createLED(String name){
+        OLed led = new OLed(hardwareMap.get(DigitalChannel.class,  "g" + name), hardwareMap.get(DigitalChannel.class,  "r" + name));
+        addElectronic(name, led);
         return led;
     }
 
-    public void halt(){
-        for(CMotor mot: cmotors.values()){
-            mot.setPower(0);
-        }
-        for(CServo crs: cservos.values()){
-            crs.setPower(0);
-        }
+    /**
+     * Adds an electronic to the electronics arraylist
+     * and gives access to the electronic to the curret thread
+     */
+    private void addElectronic(String name, Electronic e){
+        e.access.allow();
+        electronics.put(name, e);
     }
 
+
+    /**
+     * Gets treemap of specific electronics
+     * @return Electronic TreeMap
+     */
+    @SuppressWarnings("unchecked")
+    public <T> TreeMap<String, T> getElectronicsOfType(Class<T> type) {
+        TreeMap<String, T> ret = new TreeMap<>();
+        for (Entry<String, Electronic> o : electronics.entrySet()) {
+            if (o.getValue().getClass().equals(type)) {
+                ret.put(o.getKey(), (T) o.getValue());
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Halt the cmotors and cservos (i.e. set the power to 0)
+     * NOTE: This should only be called in a thread that has access to use the robot
+     */
+    public void halt(){
+        forAllElectronicsOfType(CMotor.class, CMotor::halt);
+        forAllElectronicsOfType(PMotor.class, PMotor::halt);
+        forAllElectronicsOfType(CServo.class, CServo::halt);
+    }
+
+    /**
+     * Get the currentUser
+     * @return currentUser
+     */
     public User getUser(){
         return currentUser;
     }
 
-    public void switchUser(User newUser){
+    /**
+     * Switch the user to the new user,
+     * @param newUser
+     */
+    public synchronized void switchUser(User newUser){
         currentUser = newUser;
     }
 
-    public void checkAccess(User potentialUser){
+    /**
+     * Check the access of the user if they match the current user
+     * This means that only the currentUser has access and all other users will be denied
+     * In order to use a robotpart you must call switch user and then checkAccess
+     * Returns true if the user access was granted
+     * @param potentialUser
+     */
+    public synchronized boolean checkAccess(User potentialUser){
         if(potentialUser.equals(currentUser)) {
             forAllElectronics(e -> e.access.allow());
+            return true;
         }else{
             forAllElectronics(e -> e.access.deny());
+            return false;
         }
     }
 
+    /**
+     * For all electonics run...
+     * @param run
+     */
+    private void forAllElectronics(ParameterCodeSeg<Electronic> run){ for(Electronic e: electronics.values()){ run.run(e); } }
 
-    private void forAllElectronics(TypeParameterCodeSeg<Electronic> run){ for(Electronic e: electronics){ run.run(e); } }
+    /**
+     * For all electonics of a certain type run...
+     * @param run
+     */
+    private <T extends Electronic> void forAllElectronicsOfType(Class<T> type, ParameterCodeSeg<T> run){ for(Electronic e: getElectronicsOfType(type).values()){ run.run((T) e); } }
 
+    /**
+     * Exit based on time
+     * @param s
+     * @return exit
+     */
+    public static Exit exitTime(double s){return new Exit(() -> bot.rfsHandler.timer.seconds() > s);}
+
+    /**
+     * Exit always
+     * @return exit
+     */
+    public static Exit exitAlways(){return new Exit(() -> true);}
+
+    /**
+     * Exit never
+     * @return exit
+     */
+    public static Exit exitNever(){return new Exit(() -> false);}
+
+    /**
+     * Use this robot part
+     * NOTE: This must be called before the robot part can be used in a stage
+     * @return initial
+     */
+    public Initial usePart(){return new Initial(() -> switchUser(User.ROFU));}
+
+    /**
+     * Return the robot part to the main user
+     * NOTE: This must be called after the robot part is use in a stage
+     * @return stop
+     */
+    public Stop returnPart(){return new Stop(() -> switchUser(mainUser));}
+
+
+
+    public static Stage pause(double time){
+        return new Stage(exitTime(time));
+    }
 }

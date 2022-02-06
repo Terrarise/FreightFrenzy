@@ -1,5 +1,8 @@
 package robot;
 
+import static global.General.gameTime;
+import static global.General.mainUser;
+
 import java.util.ArrayList;
 
 import automodules.StageList;
@@ -7,23 +10,21 @@ import geometry.CoordinatePlane;
 import robotparts.RobotPart;
 import util.TerraThread;
 import util.User;
-import util.codeseg.TypeParameterCodeSeg;
-
-import static global.General.*;
+import util.codeseg.ParameterCodeSeg;
 
 public class RobotFramework {
     /**
      * The allRobotParts arraylist contains all of the robotParts in the robot,
      * The RobotPart constructor automatically adds itself to this static arraylist
      */
-    public static ArrayList<RobotPart> allRobotParts = new ArrayList<>();
+    public static ArrayList<RobotPart> allRobotParts;
     /**
      * The localPlane Coordinate plane represents the robots local perspective
      */
     public CoordinatePlane localPlane;
     /**
      * The terrathread robotFunctionsThread is used for running robotfunction related tasks,
-     * it is usually not neccessary to access this directly
+     * it is usually not necessary to access this directly
      */
     public static TerraThread robotFunctionsThread;
     /**
@@ -34,18 +35,13 @@ public class RobotFramework {
      * rfsHandler is used for running rfs code. Stages can be added to the queue
      */
     public RobotFunctions rfsHandler;
-    /**
-     *  Represents if the robot is in slow mode
-     */
-    // TODO NEW
-    // Make slowMode better by doing testing and seeing if there is better way for the driver to slow down the robot
-    public boolean slowMode = false;
 
     /**
-     * Constructor for creating a robotFramework, this should be overriden by terraBot by extending this class
+     * Constructor for creating a robotFramework, this should be overridden by terraBot by extending this class
      * Objects are instantiated here, and rfsHandler is also initialized, which sets the update code
      */
     protected RobotFramework(){
+        allRobotParts = new ArrayList<>();
         localPlane = new CoordinatePlane();
         rfsHandler = new RobotFunctions();
         robotFunctionsThread = new TerraThread();
@@ -55,12 +51,12 @@ public class RobotFramework {
 
     /**
      * This method is run from TerraBot and this initializes all of the robotparts, sets the user to main user
-     * It then starts the robotfunctionsthread, odometry thread, and resets the gametimer
+     * It then starts the robotfunctionsthread, odometry thread, and resets the game timer
      * NOTE: Threads are started in init to prevent lag in start
      */
     public void init(){
-        forAllParts(RobotPart::init);
         setUser(mainUser);
+        forAllParts(RobotPart::init);
         robotFunctionsThread.start();
         odometryThread.start();
         gameTime.reset();
@@ -73,9 +69,14 @@ public class RobotFramework {
         rfsHandler.resume();
     }
 
+    public void update(){
+        checkAccess(mainUser);
+        robotFunctionsThread.checkForException("robotFunctionsThread");
+        odometryThread.checkForException("odometryThread");
+    }
     /**
      * the stop method stops updating threads, and halts the robot
-     * @link #halt
+     * @link halt
      */
     public void stop(){
         robotFunctionsThread.stopUpdating();
@@ -102,28 +103,52 @@ public class RobotFramework {
      * NOTE: This does not change the access of the user which must be updated explicity with checkAccess
      * @param newUser
      */
-    public void setUser(User newUser){ forAllParts(part -> part.switchUser(newUser)); }
+    public synchronized void setUser(User newUser){ forAllParts(part -> part.switchUser(newUser)); }
 
     /**
      * Checks the access of the potential user to all of the robot parts
      * This should be called every time a user wants to use the robot, to check if the current user privileges are updated
      * @param potentialUser
      */
-    public void checkAccess(User potentialUser){ forAllParts(part -> part.checkAccess(potentialUser)); }
+    public synchronized void checkAccess(User potentialUser){ forAllParts(part -> part.checkAccess(potentialUser)); }
 
-
-    // TODO FIX
-    // MAKe this work
-    public void cancelAutoModule(){
+    /**
+     * Cancel all of the automodules by emptying the robot functions queue
+     */
+    public void cancelAutoModules(){
+        setUserMainAndHalt();
         rfsHandler.emptyQueue();
     }
+
+    /**
+     * Set the user to main and halt all of the robot parts that aren't the main user
+     */
+    public void setUserMainAndHalt() {
+        forAllParts(part -> {
+            if (!part.getUser().equals(mainUser)){
+                part.switchUser(mainUser);
+                part.checkAccess(mainUser);
+                part.halt();
+            }
+        });
+    }
+
+    /**
+     * Resume the automodules
+     */
+    public void resumeAutoModules(){ rfsHandler.resume(); }
+
+    /**
+     * Pause the automodules
+     */
+    public void pauseAutoModules() { rfsHandler.pauseNow(); }
 
     /**
      * This runs the specified code for all of the robot parts.
      * The type parameter code segment will accept the current robotpart
      * @param run
      */
-    private void forAllParts(TypeParameterCodeSeg<RobotPart> run){
+    private void forAllParts(ParameterCodeSeg<RobotPart> run){
         for(RobotPart part: allRobotParts){
             run.run(part);
         }

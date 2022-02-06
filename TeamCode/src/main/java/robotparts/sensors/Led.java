@@ -2,15 +2,17 @@ package robotparts.sensors;
 
 
 import robotparts.RobotPart;
-import robotparts.electronics.LED;
-import robotparts.electronics.LED.*;
-
+import robotparts.electronics.output.OLed;
+import robotparts.electronics.output.OLed.*;
 
 public class Led extends RobotPart {
-    private LED ledfr;
-    private LED ledfl;
-    private LED ledbr;
-    private LED ledbl;
+    /**
+     * Leds
+     */
+    private OLed ledfr;
+    private OLed ledfl;
+    private OLed ledbr;
+    private OLed ledbl;
 
     @Override
     public void init() {
@@ -20,6 +22,10 @@ public class Led extends RobotPart {
         ledbl = createLED("ledbl");
     }
 
+    /**
+     * Sets the color of all the leds at once
+     * @param color
+     */
     public void setColorOfLEDs(LEDColor color){
         ledfr.setColor(color);
         ledbr.setColor(color);

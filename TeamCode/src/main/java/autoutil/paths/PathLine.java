@@ -1,8 +1,8 @@
 package autoutil.paths;
 
-import geometry.Line;
-import geometry.Point;
-import geometry.Pose;
+import geometry.position.Line;
+import geometry.position.Point;
+import geometry.position.Pose;
 import global.Constants;
 
 public class PathLine extends PathSegment{
@@ -14,9 +14,13 @@ public class PathLine extends PathSegment{
     }
 
     @Override
-    public void generatePoints() {
+    public void generatePoints(Pose pose) {
         for (double a = 0; a <= 1; a += Constants.LINE_ACC_PATH) {
-            points.add(new Pose(getAt(a), Math.atan2(line.my, line.mx)));
+            if (Math.abs(Math.atan2(line.my, line.mx) - pose.ang) < Math.PI/4) {
+                points.add(new Pose(getAt(a), Math.atan2(line.my, line.mx)));
+            } else {
+                points.add(new Pose(getAt(a), Math.atan2(-line.my, -line.mx)));
+            }
         }
     }
 

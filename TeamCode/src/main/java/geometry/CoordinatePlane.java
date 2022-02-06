@@ -1,16 +1,25 @@
 package geometry;
 
+import static java.lang.Math.PI;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
+import geometry.circles.AngleType;
 import geometry.polygons.Rect;
+import geometry.position.Line;
+import geometry.position.Point;
+import geometry.position.Pose;
+import geometry.position.Vector;
 
-import static java.lang.Math.*;
+/**
+ * NOTE: Uncommented
+ */
 
 public class CoordinatePlane {
 
-    // TODO NEW
-    // Finish all geometric classes
+    // TODO3 NEW
+    // Finish all geometric classes in polygon
 
 
     protected final Pose origin = new Pose(new Point(0, 0), 0);

@@ -1,16 +1,14 @@
 package robotparts.hardware;
 
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.DcMotorSimple.Direction;
-import com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior;
-import com.qualcomm.robotcore.hardware.DcMotor.RunMode;
 
-import java.util.Objects;
-
+import math.Logistic;
 import robotparts.RobotPart;
-import robotparts.electronics.CMotor;
+import robotparts.electronics.continuous.CMotor;
+
+/**
+ * NOTE: Uncommented
+ */
 
 public class MecanumDrive extends RobotPart {
     private CMotor fr,br,fl,bl;
@@ -24,10 +22,17 @@ public class MecanumDrive extends RobotPart {
     }
 
     public void move(double f, double s, double t){
-        fr.setPower(f-s-t);
-        br.setPower(-f-s+t);
-        fl.setPower(f+s+t);
-        bl.setPower(-f+s-t);
+        fr.setPower(f+s+t);
+        br.setPower(f-s+t);
+        fl.setPower(f-s-t);
+        bl.setPower(f+s-t);
+    }
+
+    public void moveSmooth(double f, double s, double t){
+        Logistic movementCurveForward = new Logistic(10,5);
+        Logistic movementCurveStrafe = new Logistic(30,6);
+        Logistic movementCurveTurn = new Logistic(30,6);
+        move(movementCurveForward.fodd(f), movementCurveStrafe.fodd(s), movementCurveTurn.fodd(t));
     }
 
 

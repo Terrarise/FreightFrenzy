@@ -1,12 +1,11 @@
 package elements;
 
 public enum GameElement {
+    /**
+     * Enum to represent different game elements like the balls and cubes
+     */
     BALL,
     CUBE,
     UNKNOWN,
     NONE
-
-    // TODO NEW
-    // Add important information about objects here
-    // For example size, weight, etc..
 }

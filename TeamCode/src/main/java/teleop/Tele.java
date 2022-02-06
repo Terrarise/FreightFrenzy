@@ -4,32 +4,62 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import elements.FieldSide;
 import global.Common;
-import global.General;
-import static global.General.*;
 
 public abstract class Tele extends OpMode implements Common {
-    // Base class for teleops
+    /**
+     * Base class for teleops
+     * NOTE: If you are creating a real teleop then call activate in initTele
+     */
 
+
+    /**
+     * Init method runs when the user clicks the init button to run a teleop
+     */
+    public void initTele(){}
+
+    /**
+     * Start method runs when the user clicks the start button after init
+     */
+    public void startTele() {}
+
+    /**
+     * Loop method runs over and over after start
+     */
+    public abstract void loopTele();
+
+    /**
+     * Stop method runs when the program ends
+     */
+    public void stopTele(){}
+
+
+    /**
+     * Internal final teleop methods
+     * NOTE: Do not use or override these
+     */
 
     @Override
-    public void init() {
+    public final void init() {
         reference(this);
+        activate(FieldSide.UNKNOWN);
+        initTele();
     }
 
     @Override
-    public void start() {
+    public final void start(){
+        startTele();
         ready();
     }
 
     @Override
-    public void loop() {
+    public final void loop() {
+        loopTele();
         update(true);
     }
 
     @Override
-    public void stop() {
+    public final void stop() {
+        stopTele();
         end();
     }
-
-
 }

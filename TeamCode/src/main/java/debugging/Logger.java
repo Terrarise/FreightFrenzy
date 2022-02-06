@@ -1,42 +1,88 @@
 package debugging;
 
+import static global.General.*;
+import static global.General.telemetry;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-
-import teleutil.Selector;
-import util.store.Item;
-
-import static global.General.*;
+import java.util.Map.Entry;
+import java.util.Objects;
 
 public class Logger {
+    /**
+     * Hashmap of logs
+     * NOTE: Hashmaps preserve order unlike treemaps
+     */
     private final LinkedHashMap<String, Log> logs = new LinkedHashMap<>();
+    /**
+     * The log number since the start
+     */
     private int logNum = 0;
 
-    public void display(Object val){
-        addLog(String.valueOf(val), new Log(getLogName("Display")), String.valueOf(val));
-    }
-    public void display(String caption, Object val){
-        addLog(caption, new Log(getLogName(caption)), String.valueOf(val));
+    private boolean shouldUpdateOnShow = false;
+
+    public void setShouldUpdateOnShow(boolean value){
+        shouldUpdateOnShow = value;
     }
 
-    public void monitor(String name, Object val){
-        addLog(name, new Log(getLogName(name), LogType.MONITOR), val);
+    private void updateOnShow(){
+        if(shouldUpdateOnShow){telemetry.update();}
     }
 
-    public void watch(Object val){
-        addLog(String.valueOf(val), new Log(getLogName("Watch"), LogType.WATCH), String.valueOf(val));
+    /**
+     * Shows the output on telemetry
+     * @param val
+     */
+    public void show(Object val){
+        telemetry.addData("Show", val);
+        updateOnShow();
     }
-    public void watch(String caption, Object val){
-        addLog(caption, new Log(getLogName(caption), LogType.WATCH), String.valueOf(val));
+    public void show(String caption, Object val){
+        telemetry.addData(caption, val);
+        updateOnShow();
     }
 
-    public void save(String name, Object val){
-        addLog(name, new Log(getLogName(name), LogType.SAVE), val);
+    /**
+     * Records the value and doesn't display telemetry
+     * @param val
+     */
+    public void record(String name, Object val){
+        if(!logs.containsKey(name)){
+            logs.put(name, new Log("Log #"+logNum+": "+name));
+            logNum++;
+        }
+        Objects.requireNonNull(logs.get(name)).addNewOnly(val);
     }
 
+    /**
+     * Shows and records telemetry
+     * @param caption
+     * @param val
+     */
+    public void showAndRecord(String caption, Object val){
+        show(caption, val);
+        record(caption, val);
+    }
+
+    /**
+     * Creates a header to separate different parts of telemetry
+     * @param name
+     */
+    public void header(String name){
+        show("--------" + name.toUpperCase() + "--------");
+    }
+
+    /**
+     * Create a list and show what is the current value being selected
+     * @param values
+     * @param currentIndex
+     */
     public void list(ArrayList<String> values, int currentIndex){
         for(int i = 0; i < values.size(); i++){
             String num = Integer.toString(i);
+            /**
+             * Lol formatting issues be like
+             */
             if(i < 10){
                 num = "0" + num;
             }
@@ -48,52 +94,30 @@ public class Logger {
         }
     }
 
-    private String getLogName(String name){
-        return "Log #"+logNum+": "+ name;
-    }
-
-    private Log getLog(String name) { return logs.get(name); }
-
-    private void addLog(String name, Log log, Object o){
-        if(!logs.containsKey(name)){
-            logs.put(name, log);
-            logNum++;
-        }
-        switch (log.logType){
-            case NORMAL:
-                getLog(name).addNewOnly(o);
-                break;
-            case MONITOR:
-                getLog(name).add(o);
-                break;
-            case WATCH:
-                telemetry.addData(log.name, String.valueOf(o));
-                getLog(name).noTelemetry = true;
-                getLog(name).add(o);
-                break;
-            case SAVE:
-                getLog(name).noTelemetry = true;
-                getLog(name).addNewOnly(o);
-                break;
-        }
-    }
+    /**
+     * Updates the telemetry and shows the logs that noTelemetry is false
+     */
     public void showTelemetry(){
-        for(String key: logs.keySet()){
-            if(!getLog(key).noTelemetry) {
-                telemetry.addData(getLog(key).name, getLog(key).getCurrentObject());
-            }
-        }
         telemetry.update();
     }
+
+    /**
+     * Sets noTelemetry to true for all the logs (so they effectively arent displayed)
+     */
     public void clearTelemetry(){
-        for(String key: logs.keySet()){
-            getLog(key).noTelemetry = true;
-        }
+        telemetry.clear();
     }
+
+    /**
+     * Shows the logs at the end of the code
+     * To see the logs go to logcat and then the assert tab
+     */
     public void showLogs(){
-        for(String key: logs.keySet()){
-            android.util.Log.println(android.util.Log.ASSERT, getLog(key).name, String.valueOf(getLog(key).getValues()));
+        for(Entry<String, Log> entry: logs.entrySet()){
+            String name = entry.getValue().getName();
+            String value = entry.getValue().getValues().toString();
+            android.util.Log.println(android.util.Log.ASSERT, name, value);
         }
-        android.util.Log.println(android.util.Log.ASSERT, "# of logs", String.valueOf(logs.keySet().size()));
+        android.util.Log.println(android.util.Log.ASSERT, "Number of logs", Integer.toString(logNum));
     }
 }

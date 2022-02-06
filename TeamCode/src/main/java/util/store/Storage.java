@@ -1,57 +1,105 @@
 package util.store;
 
-import android.graphics.Bitmap;
+import static global.General.fault;
+
 import android.os.Environment;
 
-import org.checkerframework.checker.units.qual.A;
+import com.google.gson.Gson;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 import util.ExceptionCatcher;
-import util.codeseg.BooleanCodeSeg;
-
-import static global.General.*;
+import util.condition.Expectation;
+import util.condition.Magnitude;
 
 public class Storage {
+    /**
+     * List of items to store
+     */
     private ArrayList<Item<?>> items = new ArrayList<>();
 
-    public <T> void addItem(String name, T value) { items.add(new Item<>(name, value));
+    /**
+     * Gson object used for parsing json
+     */
+    public static Gson gson = new Gson();
+
+    /**
+     * Add an item given a name and a value
+     * @param name
+     * @param value
+     */
+    public <T> void addItem(String name, T value) { items.add(new Item<>(name, value)); }
+
+    /**
+     * Add item given an item object
+     * @param item
+     * @param <T>
+     */
+    public <T> void addItem(Item<T> item) { items.add(item); }
+
+    /**
+     * Add data by giving an array of inputs (x values) and outputs (y values)
+     * @param name
+     * @param input
+     * @param output
+     * @param <X>
+     * @param <Y>
+     */
+    public <X, Y> void addData(String name, ArrayList<X> input, ArrayList<Y> output) {
+        Data<X, Y> data = new Data<>(name, input, output);
+        addItem(data.getInput());
+        addItem(data.getOutput());
     }
+
+    /**
+     * Save the items currently in the arraylist of items
+     * NOTE: This generates a bunch of text files in the current directory with the name of the item
+     * as the name of the text file and the value in the file
+     */
     public void saveItems(){
+        fault.log("No items to save", Expectation.SURPRISING, Magnitude.MINOR, items.isEmpty(), false);
         for(Item<?> i: items) {
-            saveText("current", i.getName(), i.getValue().toString());
+            saveText("current", i.getName(), i.toString());
         }
     }
+
+    /**
+     * Removes all of the items in the arraylist of items
+     */
     public void emptyItems(){
         items = new ArrayList<>();
     }
 
-    public Object getItem(String name, ItemType type){
-        String rawValue = readText("current", name);
-        switch (type){
-            case STRING:
-                return rawValue;
-            case INT:
-                return Integer.valueOf(rawValue);
-            case FLOAT:
-                return Float.valueOf(rawValue);
-            case DOUBLE:
-                return Double.valueOf(rawValue);
-            case BOOLEAN:
-                return Boolean.valueOf(rawValue);
-        }
-        return null;
+    /**
+     * Get the item using the name
+     * NOTE: This gets it from the storage not the arraylist so the arraylist could be empty when this is called
+     * @param name
+     * @return itemValue
+     */
+    public Item<?> getItem(String name){
+        return Item.fromString(name, readText("current", name));
     }
 
+    /**
+     * Get the data using the name
+     * @param name
+     * @return data
+     */
+    public Data<?, ?> getData(String name){
+        return Data.fromString(name, readText("current", Data.getInputName(name)), readText("current", Data.getOutputName(name)));
+    }
+
+    /**
+     * Save the text using the directory name, the filename, and the string to save
+     * @param dirname
+     * @param filename
+     * @param in
+     */
     private void saveText(String dirname, String filename, String in)  {
         ExceptionCatcher.catchIO(() -> {
             PrintWriter out = new PrintWriter(makeOutputFolder(dirname).getAbsolutePath()+"/" + filename + ".txt");
@@ -61,6 +109,12 @@ public class Storage {
         });
     }
 
+    /**
+     * Read the text from the directory name, and the filename
+     * @param dirname
+     * @param filename
+     * @return text
+     */
     private String readText(String dirname, String filename) {
         final String[] out = {""};
         ExceptionCatcher.catchIO(() -> {
@@ -70,26 +124,16 @@ public class Storage {
         return out[0];
     }
 
-    public void saveBitmap(String dirname, Bitmap in, String name){
-//        File f = new File(makeOutputFolder(dirname), name + ".png");
-//        ExceptionCatcher.catchIO(f::createNewFile);
-//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//        in.compress(Bitmap.CompressFormat.PNG, 0, bos);
-//        byte[] bitmapdata = bos.toByteArray();
-//        ExceptionCatcher.catchIO(() -> {
-//            FileOutputStream fos = new FileOutputStream(f);
-//            fos.write(bitmapdata);
-//            fos.flush();
-//            fos.close();
-//        });
-    }
-
+    /**
+     * Make the output folder from the specified directory name
+     * NOTE: All files and folders will be under the FTC_Files folder
+     * @param dirname
+     * @return output directory
+     */
     private File makeOutputFolder(String dirname){
         File filepath = Environment.getExternalStorageDirectory();
         File ftcDir = new File(filepath.getAbsolutePath()+"/FTC_Files/");
-        log.save("was ftcDir made?", ftcDir.mkdir());
         File outDir = new File(ftcDir.getAbsolutePath()+"/"+dirname+"/");
-        log.save("was outDir made?", outDir.mkdir());
         return outDir;
     }
 }
