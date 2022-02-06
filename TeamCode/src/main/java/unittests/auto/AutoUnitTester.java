@@ -8,6 +8,7 @@ import auton.Auto;
 import elements.FieldSide;
 import unittests.UnitTester;
 import unittests.auto.framework.EmptyTest2;
+import unittests.auto.framework.OdometryTest;
 import util.condition.Status;
 
 @SuppressWarnings("ALL")
@@ -34,7 +35,8 @@ public class AutoUnitTester extends Auto implements UnitTester {
 //                new PIDTest(),
 //                new EmptyTest(),
 //                new MoveTest(),
-                new EmptyTest2()
+//                new EmptyTest2(),
+                new OdometryTest()
         );
     }
 

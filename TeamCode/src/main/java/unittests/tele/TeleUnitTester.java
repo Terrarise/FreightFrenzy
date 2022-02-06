@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import elements.FieldSide;
 import teleop.Tele;
 import unittests.UnitTester;
+import unittests.unused.MecanumDriveTest;
 
 @SuppressWarnings("ALL")
 @TeleOp(name = "TeleUnitTester", group = "UnitTests")
@@ -46,6 +47,7 @@ public class TeleUnitTester extends Tele implements UnitTester{
          * Hardware
          */
         addAll(
+            new MecanumDriveTest()
 //            new TankDriveTest(),
 //            new IntakeTest(),
 //            new LiftTest(),

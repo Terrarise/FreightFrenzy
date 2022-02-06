@@ -4,9 +4,11 @@ public class RiseConfig extends RobotConfig {
     {
         define(
                 mecanumDrive,
-                riseLift,
-//                riseCarousel,
-                intake
+                lift,
+                carousel,
+                intake,
+                gyroSensors,
+                odometry
         );
     }
 }

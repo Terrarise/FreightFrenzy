@@ -1,11 +1,6 @@
 package autoutil.generators;
 
-import static java.lang.Math.PI;
-import static java.lang.Math.abs;
-import static java.lang.Math.cos;
-import static java.lang.Math.pow;
-import static java.lang.Math.sin;
-import static java.lang.Math.sqrt;
+import static java.lang.Math.*;
 
 import java.util.ArrayList;
 

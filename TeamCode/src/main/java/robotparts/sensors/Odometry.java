@@ -24,7 +24,7 @@ public class Odometry extends RobotPart {
     private final ExceptionCodeSeg<RuntimeException> odometryUpdateCode = this::update;
 
 //    private IEncoder rEnc;
-    private IEncoder cEnc;
+    protected IEncoder cEnc;
 
     public double[] curPos = new double[] { 0, 0, 0 };
     public double[] lastChangePos = new double[] { 0, 0, 0 };

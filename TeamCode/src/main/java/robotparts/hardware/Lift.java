@@ -1,5 +1,10 @@
 package robotparts.hardware;
 
+import static global.General.bot;
+import static global.General.fault;
+import static global.General.fieldSide;
+import static global.General.mainUser;
+
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import automodules.stage.Exit;
@@ -7,154 +12,85 @@ import automodules.stage.Initial;
 import automodules.stage.Main;
 import automodules.stage.Stage;
 import automodules.stage.Stop;
+import elements.FieldSide;
 import global.Constants;
 import robotparts.RobotPart;
 import robotparts.electronics.positional.PMotor;
 
-import static global.General.*;
-
 public class Lift extends RobotPart {
     /**
-     * Lift positional motor
+     * Turret positional motor
      */
     private PMotor li;
 
     /**
-     * Init method creates the lift motor and resets the encoder (done internally)
+     * Create the turret motor and reset it (done internally)
      */
     @Override
     public void init() {
-        li = createPMotor("li", DcMotorSimple.Direction.FORWARD);
+        li = createPMotor("li", DcMotorSimple.Direction.REVERSE);
     }
 
     /**
-     * Move the lift motor at a certain power
-     * @param p
+     * Move the motor at a power
+     * @param power
      */
-    public void move(double p){
-        li.setPower(p + Constants.LIFT_REST_POW);
+    public void move(double power) {
+        li.setPower(power);
     }
 
     /**
-     * Gets the position of the lift (in ticks)
-     * @return ticks
+     * Get the turret position
+     * @return position
      */
     public double getLiftPos(){
         return li.getPosition();
     }
 
     /**
-     * Gets the current power of the motor
-     * @return power
-     */
-    public double getPower() { return li.getPower(); }
-
-    /**
-     * Resets the lift encoder
+     * Reset the turret encoder (motor encoder)
      */
     public void resetEncoder(){li.resetPosition();}
 
     /**
-     * Sets the lift target in cm
-     * @param h
+     * Set the target angle for the turret
+     * @param angle
      */
-    public void setTarget(double h){
-        li.setPosition(h*Constants.LIFT_CM_TO_TICKS);
+    public void setTarget(double angle){
+        li.setPosition(angle * Constants.TURRET_ANGLE_DEG_TO_TICKS);
     }
 
     /**
-     * Gets the target of the lift (in cm)
-     * @return
-     */
-    public double getTarget() {
-        return li.getTarget()/Constants.LIFT_CM_TO_TICKS;
-    }
-
-    /**
-     * Stops and resets the mode of the positional motor
-     */
-    public void stopAndResetMode() {
-        li.stopAndReset();
-    }
-
-    /**
-     * Has the positional motor reached the target position?
-     * @return hasReachedTarget
+     * Has the turret reached the target position
+     * @return hasReached
      */
     public boolean hasReachedTarget(){
         return li.hasReachedPosition();
     }
 
     /**
-     * Initial to set the target
-     * @param height
-     * @return
+     * Stop and reset the mode
      */
-    public Initial initialSetTarget(double height){return new Initial(() -> setTarget(height));}
-
-    /**
-     * Set the power of the lift in a main
-     * @param power
-     * @return
-     */
-    public Main main(double power){
-        return new Main(() -> {
-            move(power);
-        });
+    public void stopAndResetMode() {
+        li.stopAndReset();
     }
 
     /**
-     * Exit when the lift is down
-     * NOTE: Uses the touch sensor
-     * @return
+     * Automobile methods
      */
-    public Exit exitDown(){return new Exit(() -> bot.touchSensors.isOuttakePressingTouchSensor());}
+    public Initial initialSetTarget(double angle){return new Initial(() -> setTarget(angle));}
 
-    /**
-     * Exit when the lift reached the target
-     * @return
-     */
+    public Main main(double power){return new Main(()-> move(power));}
     public Exit exitReachedTarget(){return new Exit(this::hasReachedTarget);}
 
-    /**
-     * Stop the lift motor
-     * @return
-     */
-    public Stop stop(){return new Stop(() -> move(0));}
-
-    /**
-     * Stop the lift and reset the mode
-     * @return
-     */
     public Stop stopEncoder(){return new Stop(this::stopAndResetMode);}
 
-    /**
-     * Lift for a certain time
-     * @param power
-     * @param time
-     * @return
-     */
-    public Stage liftTime(double power, double time){return new Stage(
+    public Stage liftEncoder(double power, double angle){ return new Stage(
             usePart(),
-            main(power),
-            exitTime(time),
-            stop(),
-            returnPart()
-    );}
-
-    /**
-     * Lift to a certain position
-     * @param power
-     * @param height
-     * @return
-     */
-    public Stage liftEncoder(double power, double height){return new Stage(
-            usePart(),
-            initialSetTarget(height),
+            initialSetTarget(angle),
             main(power),
             exitReachedTarget(),
             stopEncoder(),
             returnPart()
     );}
-
 }
