@@ -20,8 +20,9 @@ public class AutoModules{
         bot.outtake.outtakeReset(0.05),
         bot.lift.liftEncoder(0.4, 0),
         bot.intake.intakeUntilFreightLiftDown(1),
-        bot.outtake.outtakeLockAndIntake(1),
-        bot.intake.intakeTime(-1, 0.8)
+        bot.lift.liftEncoderAndIntake(0.2, 90),
+        bot.outtake.outtakeLock(1),
+        bot.lift.liftEncoder(0.1, 170)
     );
 
     public StageList MoveForwardTime(double time) {
@@ -46,17 +47,14 @@ public class AutoModules{
         );
     }
 
-    public StageList LiftOdometry = new StageList(bot.tankDrive).define(
-        bot.tankDrive.liftOdo()
-    );
-
     public StageList pause(double time) {
         return new StageList().define(
             RobotPart.pause(time)
         );
     }
 
-    public StageList RiseLift = new StageList(bot.lift).define(
-        bot.lift.liftEncoder(0.5, 135)
+    public StageList ReleaseAndResetTele = new StageList(bot.lift, bot.outtake).define(
+        bot.outtake.outtakeDrop(1),
+        bot.lift.liftEncoder(0.4, 0)
     );
 }

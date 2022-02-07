@@ -39,6 +39,12 @@ public class Lift extends RobotPart {
         li.setPower(power);
     }
 
+    public void setToRestPow() {
+        double liftPos = getLiftPos()/Constants.TURRET_ANGLE_DEG_TO_TICKS - 45;
+        liftPos *= Math.PI/180;
+        move(Math.cos(liftPos) * 0.1);
+    }
+
     /**
      * Get the turret position
      * @return position
@@ -91,6 +97,19 @@ public class Lift extends RobotPart {
             main(power),
             exitReachedTarget(),
             stopEncoder(),
+            returnPart()
+    );}
+
+    public Stage liftEncoderAndIntake(double power, double angle){ return new Stage(
+            usePart(),
+            bot.intake.usePart(),
+            initialSetTarget(angle),
+            bot.intake.main(1),
+            main(power),
+            exitReachedTarget(),
+            stopEncoder(),
+            bot.intake.stop(),
+            bot.intake.returnPart(),
             returnPart()
     );}
 }

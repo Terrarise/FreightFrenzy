@@ -8,7 +8,9 @@ public class RiseConfig extends RobotConfig {
                 carousel,
                 intake,
                 gyroSensors,
-                odometry
+                odometry,
+                outtake,
+                colorSensors
         );
     }
 }

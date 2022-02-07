@@ -23,9 +23,9 @@ public class Outtake extends RobotPart {
     public void init(){
         lo = createPServo("lo", Servo.Direction.FORWARD, 0.25, 0.5);
         lo.addPosition("cubeLock", 0.0);
-        lo.addPosition("ballLock", 0.25);
+        lo.addPosition("ballLock", 0.2);
         lo.addPosition("aligned", 0.35);
-        lo.addPosition("start", 0.41);
+        lo.addPosition("start", 1.0);
         lo.addPosition("open", 1.0);
     }
 
